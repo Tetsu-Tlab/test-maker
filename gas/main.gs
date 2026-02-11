@@ -1,8 +1,8 @@
-function doGet(e: any) {
+function doGet(e) {
     return ContentService.createTextOutput("GAS is ready.");
 }
 
-function doPost(e: any) {
+function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const { title, questions, folderPath } = data; // folderPath: ["T-Lab", "テスト", "2026年度"]
 
@@ -23,10 +23,10 @@ function doPost(e: any) {
         form.setAllowResponseEdits(false);
         form.setCollectEmail(false);
 
-        questions.forEach((q: any) => {
+        questions.forEach((q) => {
             const item = form.addMultipleChoiceItem();
             item.setTitle(q.text)
-                .setChoices(q.options.map((opt: string, idx: number) =>
+                .setChoices(q.options.map((opt, idx) =>
                     item.createChoice(opt, idx === q.correctIndex)
                 ))
                 .setPoints(5)
@@ -51,7 +51,7 @@ function doPost(e: any) {
             ssUrl: ss.getUrl()
         })).setMimeType(ContentService.MimeType.JSON);
 
-    } catch (error: any) {
+    } catch (error) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'error',
             message: error.toString()
@@ -59,7 +59,7 @@ function doPost(e: any) {
     }
 }
 
-function getOrCreateFolderRecursive(pathArray: string[]) {
+function getOrCreateFolderRecursive(pathArray) {
     let currentFolder = DriveApp.getRootFolder();
     for (const name of pathArray) {
         const folders = currentFolder.getFoldersByName(name);

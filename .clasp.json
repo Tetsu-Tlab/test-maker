@@ -1,5 +1,8 @@
 {
-    "scriptId": "YOUR_SCRIPT_ID_HERE",
-    "rootDir": "./gas",
-    "fileExtension": "ts"
+  "scriptId": "1CNvUG269IDh_VdbQO0auqmiSkCfROGmDsoWuBW180JqgQlbWJPyzho5D",
+  "rootDir": "gas",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ]
 }
