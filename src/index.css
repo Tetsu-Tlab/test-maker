@@ -168,16 +168,20 @@ h4 {
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
   background: var(--bg-card);
   color: var(--text-main) !important;
   /* 文字色を強制 */
   user-select: none;
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .option-chip:hover {
   border-color: var(--primary);
-  background: hsla(var(--primary-hsl), 0.05);
+  background: hsla(var(--primary-hsl), 0.1);
 }
 
 .option-chip.active {
@@ -186,6 +190,13 @@ h4 {
   /* 選択時は常に白文字 */
   border-color: var(--primary);
   box-shadow: 0 5px 15px hsla(var(--primary-hsl), 0.4);
+}
+
+#unit-selection-section {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  min-height: 100px;
 }
 
 @keyframes fadeInDown {

@@ -1,5 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+/**
+ * 複数のモデルを試行し、成功したものを返す
+ */
 export async function generateQuiz(
   apiKey: string,
   grade: string,
@@ -8,19 +11,24 @@ export async function generateQuiz(
   specialNeed: string,
   useFurigana: boolean
 ) {
-  if (!apiKey) throw new Error("APIキーが入力されていません。設定画面で入力してください。");
+  if (!apiKey) throw new Error("APIキーが入力されていません。");
 
-  // APIのURLがおかしくならないよう、最小限の初期化
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // 404エラー対策: より確実に動作するモデル名のリスト
-  // gemini-1.5-flash は最新モデルだが、環境によって名称が異なる場合がある
-  const modelNames = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
-  let lastError = null;
+  // 試行するモデルの優先順位
+  const modelNames = [
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro-latest",
+    "gemini-1.5-pro",
+    "gemini-pro" // 旧モデル名
+  ];
+
+  let lastError: any = null;
 
   for (const modelName of modelNames) {
     try {
-      console.log(`Trying Gemini model: ${modelName}`);
+      console.log(`[Gemini] Attempting with model: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
 
       const furiganaPrompt = useFurigana
@@ -34,43 +42,50 @@ export async function generateQuiz(
 学年: ${grade}
 教科: ${subject}
 単元: ${unit}
-配慮: ${specialNeed}
+個別の配慮: ${specialNeed}
 ${furiganaPrompt}
 
 【出力形式】
-JSONのみを返してください。
+JSON構造のみを返してください。
 {
-  "title": "${grade} ${subject} 小テスト",
+  "title": "${grade} ${subject} 小テスト (${unit})",
   "questions": [
     {
       "text": "問題文",
       "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
       "correctIndex": 0,
-      "explanation": "解説文"
+      "explanation": "理由と解説"
     }
   ]
 }
 `;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const data = await result.response;
+      const text = data.text();
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
+        console.log(`[Gemini] Success with model: ${modelName}`);
         return JSON.parse(jsonMatch[0]);
       }
     } catch (err: any) {
-      console.warn(`Model ${modelName} attempt failed:`, err);
+      console.warn(`[Gemini] Model ${modelName} failed.`, err);
       lastError = err;
-      // 404以外の致命的なエラー（APIキー無効など）はすぐに投げる
+
+      // キーの無効化など、モデル名に依存しない致命的なエラーはループを抜ける
       if (err.message && (err.message.includes("API_KEY_INVALID") || err.message.includes("403"))) {
-        throw new Error("APIキーが無効、または権限がありません。");
+        throw new Error("APIキーが無効、またはアクセス権限がありません。");
       }
-      continue;
+
+      continue; // 次のモデルを試す
     }
   }
 
-  // ループ終了後にエラーがあれば投げる
-  throw new Error(`AI生成に失敗しました (404対策実施済み)。エラー: ${lastError?.message || "不明"}`);
+  // すべて失敗した場合
+  const finalMessage = lastError?.message || "不明なエラー";
+  if (finalMessage.includes("404")) {
+    throw new Error("Gemini 1.5/Proモデルが見つかりませんでした(404)。APIキーの設定やリージョンを確認してください。");
+  }
+  throw new Error(`AI生成エラー: ${finalMessage}`);
 }

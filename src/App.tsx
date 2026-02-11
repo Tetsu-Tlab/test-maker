@@ -11,7 +11,6 @@ import {
   Users,
   Eye,
   CheckCircle2,
-  ArrowLeft,
   Edit3,
   Trash2,
   PlusCircle,
@@ -600,71 +599,79 @@ function App() {
         </section>
 
         {/* Step 4: Unit Selection */}
-        <AnimatePresence mode="wait">
-          {(selectedGrade && selectedSubject) && (
-            <motion.section
-              key={`${selectedGrade}-${selectedSubject}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="selection-group"
-              id="unit-selection-section"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Sparkles size={32} className="text-primary" />
-                <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)' }}>単元を選択</h2>
+        <section
+          className="selection-group"
+          style={{
+            display: (selectedGrade && selectedSubject) ? 'block' : 'none',
+            opacity: 1,
+            minHeight: '200px',
+            marginTop: '2rem',
+            border: '2px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '2rem',
+            background: 'var(--bg-card)' // 暗い背景に対して確実に白またはグレーを出す
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <Sparkles size={32} className="text-primary" />
+            <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)' }}>単元を選択</h2>
+          </div>
+          <div className="grid">
+            {currentUnits.length > 0 ? (
+              currentUnits.map((unit: any) => (
+                <div
+                  key={unit.id}
+                  className={`option-chip ${selectedUnit === unit.id ? 'active' : ''}`}
+                  onClick={() => setSelectedUnit(unit.id)}
+                  style={{
+                    border: selectedUnit === unit.id ? '4px solid var(--primary)' : '2px solid var(--border)',
+                    boxShadow: selectedUnit === unit.id ? '0 0 20px rgba(var(--primary-rgb), 0.5)' : 'none',
+                    background: selectedUnit === unit.id ? 'var(--primary)' : 'var(--bg-card)'
+                  }}
+                >
+                  {unit.label}
+                </div>
+              ))
+            ) : (
+              <div style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '3rem',
+                color: 'var(--text-main)',
+                border: '1px dashed var(--border)',
+                borderRadius: 'var(--radius-md)'
+              }}>
+                <p style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+                  学年と教科を選択すると、ここに選択肢が表示されます。
+                </p>
               </div>
-              <div className="grid">
-                {currentUnits.length > 0 ? (
-                  currentUnits.map((unit: any) => (
-                    <motion.div
-                      key={unit.id}
-                      variants={itemVariants}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`option-chip ${selectedUnit === unit.id ? 'active' : ''}`}
-                      onClick={() => setSelectedUnit(unit.id)}
-                      style={{ border: selectedUnit === unit.id ? '2px solid var(--primary)' : '2px solid var(--border)' }}
-                    >
-                      {unit.label}
-                    </motion.div>
-                  ))
-                ) : (
-                  <div style={{
-                    gridColumn: '1 / -1',
-                    textAlign: 'center',
-                    padding: '3rem',
-                    background: 'rgba(255,255,255,0.05)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px dashed var(--border)',
-                    color: 'var(--text-main)'
-                  }}>
-                    <p style={{ fontSize: '1.1rem' }}>
-                      この教科の単元データが見つかりませんでした。
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
+            )}
+          </div>
+        </section>
 
         {/* Final Action Button */}
         <div style={{ textAlign: 'center', marginTop: '6rem', marginBottom: '4rem' }}>
-          <motion.button
-            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(var(--primary-rgb), 0.4)' }}
-            whileTap={{ scale: 0.95 }}
+          <button
             className="btn-primary"
             disabled={!selectedGrade || !selectedSubject || !selectedUnit || isGenerating}
             onClick={handleGenerate}
-            style={{ padding: '1.5rem 6rem', fontSize: '1.5rem' }}
+            style={{
+              padding: '2.5rem 8rem',
+              fontSize: '2.2rem',
+              fontWeight: 900,
+              background: 'var(--primary)',
+              color: '#ffffff',
+              border: '6px solid white',
+              boxShadow: '0 0 50px rgba(var(--primary-rgb), 0.8)',
+              cursor: (!selectedGrade || !selectedSubject || !selectedUnit || isGenerating) ? 'not-allowed' : 'pointer'
+            }}
           >
-            問題を生成してプレビューする <ChevronRight size={28} />
-          </motion.button>
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-            <p style={{ fontSize: '0.9rem', color: selectedGrade ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 学年</p>
-            <p style={{ fontSize: '0.9rem', color: selectedSubject ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 教科</p>
-            <p style={{ fontSize: '0.9rem', color: selectedUnit ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 単元</p>
+            問題を生成してプレビューする <ChevronRight size={40} />
+          </button>
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '3rem', justifyContent: 'center' }}>
+            <p style={{ fontSize: '1.1rem', fontWeight: 800, color: selectedGrade ? 'var(--primary)' : 'var(--text-muted)' }}>{selectedGrade ? '● 学年完了' : '○ 学年未選択'}</p>
+            <p style={{ fontSize: '1.1rem', fontWeight: 800, color: selectedSubject ? 'var(--primary)' : 'var(--text-muted)' }}>{selectedSubject ? '● 教科完了' : '○ 教科未選択'}</p>
+            <p style={{ fontSize: '1.1rem', fontWeight: 800, color: selectedUnit ? 'var(--primary)' : 'var(--text-muted)' }}>{selectedUnit ? '● 単元完了' : '○ 単元未選択'}</p>
           </div>
         </div>
       </motion.main>
