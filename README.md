@@ -1,15 +1,29 @@
-# React + TypeScript + Vite
+# Quiz Creator AI 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+学力（認知能力）の向上を目指し、児童生徒一人ひとりに最適化された小テストを爆速で生成するアプリです。
 
-Currently, two official plugins are available:
+## 🌟 特徴
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **AI問題生成**: Gemini 1.5 Flash を活用し、20問の良質な問題と詳細な解説を生成。
+- **ふりがな対応**: 低学年や配慮が必要な児童向けに、ワンクリックで全漢字に対応するふりがなを追加可能。
+- **Google連携**: `clasp` によるGAS連携で、Google フォームの作成、ドライブでの自動整理、成績管理スプレッドシートの紐付けを自動化。
+- **エコシステム**: T-Labの教員支援総合サイトの一部として、他のアプリ（週案、成績処理など）と有機的に連動することを前提に設計。
 
-## React Compiler
+## 🚀 開発のロードマップ
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [x] UIベースの構築
+- [x] Gemini API による問題生成ロジック
+- [x] GAS/Clasp によるフォーム自動生成
+- [x] ふりがなトグル機能
+- [ ] 成績データのさらなる高度な分析連携
+- [ ] ミス傾向に基づいた「類似問題5問」の自動リコメンド
+
+## 📦 セットアップ
+
+1. `npm install`
+2. `npm run dev`
+3. GASの連携については `GAS_GUIDE.md` を参照してください。
+ see [this documentation](https://react.dev/learn/react-compiler/installation).
 
 ## Expanding the ESLint configuration
 

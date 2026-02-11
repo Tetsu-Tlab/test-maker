@@ -1,16 +1,21 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function generateQuiz(
-    apiKey: string,
-    grade: string,
-    subject: string,
-    unit: string,
-    specialNeed: string
+  apiKey: string,
+  grade: string,
+  subject: string,
+  unit: string,
+  specialNeed: string,
+  useFurigana: boolean
 ) {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `
+  const furiganaPrompt = useFurigana
+    ? "【最重要】すべての漢字の後に、かっこでふりがなをつけてください。例：漢字(かんじ)。絶対に忘れないでください。"
+    : "ふりがなは不要です。通常の漢字表記で作成してください。";
+
+  const prompt = `
 あなたは日本の小中学校の教師です。以下の条件に基づいて、児童生徒向けの20問の小テストを作成してください。
 
 【条件】
@@ -18,6 +23,7 @@ export async function generateQuiz(
 教科: ${subject}
 単元: ${unit}
 配慮事項: ${specialNeed}
+${furiganaPrompt}
 
 【出力形式】
 以下のJSON形式で出力してください。
@@ -41,13 +47,13 @@ export async function generateQuiz(
 - 日本語で回答してください。
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
 
-    // JSONを抽出
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("JSON形式の回答が得られませんでした。");
+  // JSONを抽出
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("JSON形式の回答が得られませんでした。");
 
-    return JSON.parse(jsonMatch[0]);
+  return JSON.parse(jsonMatch[0]);
 }

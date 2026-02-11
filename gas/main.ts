@@ -4,21 +4,24 @@ function doGet(e: any) {
 
 function doPost(e: any) {
     const data = JSON.parse(e.postData.contents);
-    const { title, questions, folderName } = data;
+    const { title, questions, folderPath } = data; // folderPath: ["T-Lab", "テスト", "2026年度"]
 
     try {
-        const folder = getOrCreateFolder(folderName);
+        const folder = getOrCreateFolderRecursive(folderPath);
         const form = FormApp.create(title);
         const formFile = DriveApp.getFileById(form.getId());
         formFile.moveTo(folder);
 
-        // スプレッドシート連携
-        const ss = SpreadsheetApp.create(title + "_成績");
+        // スプレッドシート連携（成績管理用）
+        const ss = SpreadsheetApp.create(title + "_成績管理");
         const ssFile = DriveApp.getFileById(ss.getId());
         ssFile.moveTo(folder);
         form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
 
+        // クイズ設定
         form.setIsQuiz(true);
+        form.setAllowResponseEdits(false);
+        form.setCollectEmail(false);
 
         questions.forEach((q: any) => {
             const item = form.addMultipleChoiceItem();
@@ -36,10 +39,16 @@ function doPost(e: any) {
             item.setFeedbackForIncorrect(feedback);
         });
 
+        // 成績管理シートの初期設定（番号管理用）
+        const sheet = ss.getSheets()[0];
+        sheet.getRange("A1:C1").setValues([["出席番号", "氏名", "合計点"]]);
+        sheet.setFrozenRows(1);
+
         return ContentService.createTextOutput(JSON.stringify({
             status: 'success',
             formUrl: form.getPublishedUrl(),
-            editUrl: form.getEditUrl()
+            editUrl: form.getEditUrl(),
+            ssUrl: ss.getUrl()
         })).setMimeType(ContentService.MimeType.JSON);
 
     } catch (error: any) {
@@ -50,12 +59,15 @@ function doPost(e: any) {
     }
 }
 
-function getOrCreateFolder(folderName: string) {
-    const root = DriveApp.getRootFolder();
-    const folders = root.getFoldersByName(folderName);
-    if (folders.hasNext()) {
-        return folders.next();
-    } else {
-        return root.createFolder(folderName);
+function getOrCreateFolderRecursive(pathArray: string[]) {
+    let currentFolder = DriveApp.getRootFolder();
+    for (const name of pathArray) {
+        const folders = currentFolder.getFoldersByName(name);
+        if (folders.hasNext()) {
+            currentFolder = folders.next();
+        } else {
+            currentFolder = currentFolder.createFolder(name);
+        }
     }
+    return currentFolder;
 }

@@ -45,6 +45,7 @@ function App() {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [selectedSpecialNeed, setSelectedSpecialNeed] = useState<string>('none');
+  const [useFurigana, setUseFurigana] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>(localStorage.getItem('gemini_api_key') || '');
   const [gasUrl, setGasUrl] = useState<string>(GAS_WEBAPP_URL);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -54,6 +55,7 @@ function App() {
   const loadingMessages = [
     "問題を考えています... 🤔",
     "解説を丁寧に書いています... ✍️",
+    "ふりがなを確認しています... 📖",
     "Google Formを準備しています... 📄",
     "児童生徒の笑顔を想像しています... ✨",
     "もう少しで完成です！ 🚀"
@@ -89,7 +91,7 @@ function App() {
       const unitLabel = (UNITS as any)[selectedSubject]?.find((u: any) => u.id === selectedUnit)?.label || '';
       const snLabel = SPECIAL_NEEDS.find(s => s.id === selectedSpecialNeed)?.label || '';
 
-      const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel);
+      const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel, useFurigana);
 
       // 2. Create Google Form using GAS
       if (gasUrl) {
@@ -100,7 +102,7 @@ function App() {
           body: JSON.stringify({
             title: quizData.title,
             questions: quizData.questions,
-            folderName: `T-Lab/テスト/${new Date().getFullYear()}年度`
+            folderPath: ["T-Lab", "テスト", `${new Date().getFullYear()}年度`]
           })
         });
         // Note: 'no-cors' means we can't see the response body, 
@@ -248,7 +250,26 @@ function App() {
 
         {/* Step 2: Special Needs Selection */}
         <section className="selection-group">
-          <h2><Users size={24} /> クラス・個別の配慮</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2><Users size={24} /> クラス・個別の配慮</h2>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              color: useFurigana ? 'var(--primary)' : 'var(--text-muted)'
+            }}>
+              <input
+                type="checkbox"
+                checked={useFurigana}
+                onChange={(e) => setUseFurigana(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+              ふりがなをつける
+            </label>
+          </div>
           <div className="grid">
             {SPECIAL_NEEDS.map((item) => (
               <motion.div
