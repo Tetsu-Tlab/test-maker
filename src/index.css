@@ -162,41 +162,47 @@ h4 {
 }
 
 .option-chip {
-  padding: 1rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  font-weight: 700;
-  background: var(--bg-card);
-  color: var(--text-main) !important;
-  /* 文字色を強制 */
-  user-select: none;
-  min-height: 3.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 1.25rem 1rem !important;
+  border: 4px solid #333333 !important;
+  /* 太い枠線 */
+  border-radius: var(--radius-md) !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  background: #ffffff !important;
+  /* 常に白背景 */
+  color: #1a1a1a !important;
+  /* 常に黒文字 */
+  user-select: none !important;
+  min-height: 4rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .option-chip:hover {
-  border-color: var(--primary);
-  background: hsla(var(--primary-hsl), 0.1);
+  border-color: var(--primary) !important;
+  background: #f0f4ff !important;
 }
 
 .option-chip.active {
   background: var(--primary) !important;
   color: #ffffff !important;
-  /* 選択時は常に白文字 */
-  border-color: var(--primary);
-  box-shadow: 0 5px 15px hsla(var(--primary-hsl), 0.4);
+  /* 選択時は白文字 */
+  border-color: #ffffff !important;
+  box-shadow: 0 0 25px rgba(var(--primary-rgb), 0.6) !important;
+  transform: scale(1.05) !important;
 }
 
-#unit-selection-section {
+/* 単元セクションを絶対に隠さない */
+.selection-group {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  min-height: 100px;
+  margin-top: 3rem !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  padding: 2rem !important;
+  border-radius: var(--radius-lg) !important;
 }
 
 @keyframes fadeInDown {
