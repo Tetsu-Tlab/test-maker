@@ -8,10 +8,14 @@ import {
   ChevronRight,
   Sparkles,
   GraduationCap,
-  Users
+  Users,
+  Eye,
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GRADES, SUBJECTS, SPECIAL_NEEDS, UNITS } from './constants';
+import { generateQuiz } from './gemini';
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -35,9 +39,6 @@ const iconMap: Record<string, any> = {
   Languages
 };
 
-import { generateQuiz } from './gemini';
-
-// GAS Web AppのURL（デプロイ後に設定）
 const GAS_WEBAPP_URL = localStorage.getItem('gas_url') || '';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
   const [gasUrl, setGasUrl] = useState<string>(GAS_WEBAPP_URL);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [quizPreviewData, setQuizPreviewData] = useState<any>(null);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
 
   const loadingMessages = [
@@ -85,36 +87,13 @@ function App() {
     }, 2500);
 
     try {
-      // 1. Generate Quiz Content using Gemini
       const gradeLabel = GRADES.find(g => g.id === selectedGrade)?.label || '';
       const subjLabel = SUBJECTS.find(s => s.id === selectedSubject)?.label || '';
       const unitLabel = (UNITS as any)[selectedSubject]?.find((u: any) => u.id === selectedUnit)?.label || '';
       const snLabel = SPECIAL_NEEDS.find(s => s.id === selectedSpecialNeed)?.label || '';
 
       const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel, useFurigana);
-
-      // 2. Create Google Form using GAS
-      if (gasUrl) {
-        await fetch(gasUrl, {
-          method: 'POST',
-          mode: 'no-cors', // GAS web app limitation
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: quizData.title,
-            questions: quizData.questions,
-            folderPath: ["T-Lab", "テスト", `${new Date().getFullYear()}年度`]
-          })
-        });
-        // Note: 'no-cors' means we can't see the response body, 
-        // but in a real app we'd use a proxy or a proper GAS setup
-        alert('ブラウザの制約上、直接のURL取得にはGAS側のCORS対応またはプロキシが必要です。GAS側でフォームは作成されているはずです！');
-        setGeneratedUrl('https://docs.google.com/forms/u/0/'); // Placeholder
-      } else {
-        // Fallback for demo: show JSON or just pretend it worked
-        console.log('Quiz Data:', quizData);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setGeneratedUrl('https://docs.google.com/forms/');
-      }
+      setQuizPreviewData(quizData);
     } catch (error: any) {
       console.error(error);
       alert('エラーが発生しました: ' + error.message);
@@ -124,8 +103,41 @@ function App() {
     }
   };
 
+  const handleFinalCreate = async () => {
+    if (!quizPreviewData) return;
+
+    setIsGenerating(true);
+    setLoadingMessage("Google Formを作成中...");
+
+    try {
+      if (gasUrl) {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: quizPreviewData.title,
+            questions: quizPreviewData.questions,
+            folderPath: ["T-Lab", "テスト", `${new Date().getFullYear()}年度`]
+          })
+        });
+        alert('Google Formの作成リクエストを送信しました！GAS側でフォームが作成されるまで数十秒かかる場合があります。');
+        setGeneratedUrl('https://docs.google.com/forms/u/0/');
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setGeneratedUrl('https://docs.google.com/forms/');
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert('エラーが発生しました: ' + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const currentUnits = selectedSubject ? (UNITS as any)[selectedSubject] || [] : [];
 
+  // --- Success Screen ---
   if (generatedUrl) {
     return (
       <div className="app-container">
@@ -147,7 +159,7 @@ function App() {
               margin: '0 auto 1.5rem',
               color: 'white'
             }}>
-              <Sparkles size={40} />
+              <CheckCircle2 size={40} />
             </div>
             <h2>テストが完成しました！</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
@@ -158,7 +170,10 @@ function App() {
             <a href={generatedUrl} target="_blank" rel="noreferrer" className="btn-primary">
               フォームを表示する
             </a>
-            <button className="option-chip" onClick={() => setGeneratedUrl(null)}>
+            <button className="option-chip" onClick={() => {
+              setGeneratedUrl(null);
+              setQuizPreviewData(null);
+            }}>
               別のテストを作る
             </button>
           </div>
@@ -167,6 +182,78 @@ function App() {
     );
   }
 
+  // --- Preview Screen ---
+  if (quizPreviewData && !isGenerating) {
+    return (
+      <div className="app-container">
+        <header className="header">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h1><Eye size={32} /> 問題のプレビュー</h1>
+            <p>生成された内容を確認してください。よろしければ Google Form を作成します。</p>
+          </motion.div>
+        </header>
+
+        <motion.div
+          className="card glass-morphism"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          style={{ padding: '2rem' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+            <h2 style={{ margin: 0, color: 'var(--primary)' }}>{quizPreviewData.title}</h2>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="option-chip" onClick={() => setQuizPreviewData(null)}>
+                <ArrowLeft size={18} /> 修正する
+              </button>
+              <button className="btn-primary" onClick={handleFinalCreate}>
+                この内容で作成する <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {quizPreviewData.questions.map((q: any, idx: number) => (
+              <div key={idx} style={{ padding: '1.5rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.2rem' }}>Q{idx + 1}.</span>
+                  <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{q.text}</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginLeft: '2rem' }}>
+                  {q.options.map((opt: string, oIdx: number) => (
+                    <div key={oIdx} style={{
+                      padding: '0.75rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border)',
+                      background: oIdx === q.correctIndex ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                      borderColor: oIdx === q.correctIndex ? 'var(--primary)' : 'var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      {oIdx === q.correctIndex && <CheckCircle2 size={16} color="var(--primary)" />}
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>💡 解説:</strong>
+                  {q.explanation}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+            <button className="btn-primary" style={{ padding: '1rem 4rem' }} onClick={handleFinalCreate}>
+              Google Form を作成する <ChevronRight size={20} />
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // --- Selection Screen (Main) ---
   return (
     <div className="app-container">
       <header className="header">
@@ -185,6 +272,40 @@ function App() {
         initial="hidden"
         animate="visible"
       >
+        {/* Loading Overlay */}
+        <AnimatePresence>
+          {isGenerating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                zIndex: 1000
+              }}
+            >
+              <div className="loading-spinner" style={{
+                width: '60px', height: '60px',
+                border: '6px solid var(--border)',
+                borderTop: '6px solid var(--primary)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                marginBottom: '2rem'
+              }}></div>
+              <motion.p
+                key={loadingMessage}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ fontSize: '1.5rem', fontWeight: 600, color: 'white' }}
+              >
+                {loadingMessage}
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* API Key Section */}
         <section className="selection-group glass-morphism card" style={{ marginBottom: '4rem', padding: '1.5rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
@@ -340,27 +461,13 @@ function App() {
 
         {/* Final Action */}
         <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-          {isGenerating ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              <div className="loading-spinner" style={{
-                width: '40px',
-                height: '40px',
-                border: '4px solid var(--border)',
-                borderTop: '4px solid var(--primary)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }}></div>
-              <p style={{ fontWeight: 600, color: 'var(--primary)' }}>{loadingMessage}</p>
-            </div>
-          ) : (
-            <button
-              className="btn-primary"
-              disabled={!selectedGrade || !selectedSubject || !selectedUnit || isGenerating}
-              onClick={handleGenerate}
-            >
-              Google Form を生成する <ChevronRight size={20} />
-            </button>
-          )}
+          <button
+            className="btn-primary"
+            disabled={!selectedGrade || !selectedSubject || !selectedUnit || isGenerating}
+            onClick={handleGenerate}
+          >
+            問題を生成してプレビューする <ChevronRight size={20} />
+          </button>
         </div>
       </motion.main>
 
