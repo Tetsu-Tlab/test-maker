@@ -10,19 +10,21 @@ export async function generateQuiz(
 ) {
   if (!apiKey) throw new Error("APIキーが入力されていません。設定画面で入力してください。");
 
+  // APIのURLがおかしくならないよう、最小限の初期化
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // 404エラー対策: 複数のモデル名を試す
-  const modelNames = ["gemini-1.5-flash", "gemini-pro"];
+  // 404エラー対策: より確実に動作するモデル名のリスト
+  // gemini-1.5-flash は最新モデルだが、環境によって名称が異なる場合がある
+  const modelNames = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
   let lastError = null;
 
   for (const modelName of modelNames) {
     try {
-      console.log(`Trying model: ${modelName}`);
+      console.log(`Trying Gemini model: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
 
       const furiganaPrompt = useFurigana
-        ? "【重要】漢字の後に(ふりがな)をつけてください。例：漢字(かんじ)"
+        ? "【重要】すべての漢字の後に(ふりがな)をつけてください。例：漢字(かんじ)"
         : "ふりがなは不要です。";
 
       const prompt = `
@@ -32,19 +34,19 @@ export async function generateQuiz(
 学年: ${grade}
 教科: ${subject}
 単元: ${unit}
-個別の配慮: ${specialNeed}
+配慮: ${specialNeed}
 ${furiganaPrompt}
 
 【出力形式】
-以下のJSON構造のみを返してください。
+JSONのみを返してください。
 {
-  "title": "${grade} ${subject} 小テスト (${unit})",
+  "title": "${grade} ${subject} 小テスト",
   "questions": [
     {
       "text": "問題文",
       "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
       "correctIndex": 0,
-      "explanation": "児童生徒が理解を深められる丁寧な解説"
+      "explanation": "解説文"
     }
   ]
 }
@@ -59,16 +61,16 @@ ${furiganaPrompt}
         return JSON.parse(jsonMatch[0]);
       }
     } catch (err: any) {
-      console.warn(`Model ${modelName} failed:`, err);
+      console.warn(`Model ${modelName} attempt failed:`, err);
       lastError = err;
-      continue; // 次のモデルを試す
+      // 404以外の致命的なエラー（APIキー無効など）はすぐに投げる
+      if (err.message && (err.message.includes("API_KEY_INVALID") || err.message.includes("403"))) {
+        throw new Error("APIキーが無効、または権限がありません。");
+      }
+      continue;
     }
   }
 
-  // すべてのモデルで失敗した場合
-  const errorMsg = lastError?.message || "AIとの通信に失敗しました。";
-  if (errorMsg.includes("404")) {
-    throw new Error("利用可能なGeminiモデルが見つかりませんでした。APIキーの権限を確認してください。");
-  }
-  throw new Error(`生成エラー: ${errorMsg}`);
+  // ループ終了後にエラーがあれば投げる
+  throw new Error(`AI生成に失敗しました (404対策実施済み)。エラー: ${lastError?.message || "不明"}`);
 }

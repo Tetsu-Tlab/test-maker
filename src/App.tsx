@@ -599,19 +599,20 @@ function App() {
           </div>
         </section>
 
-        {/* Step 4: Unit */}
+        {/* Step 4: Unit Selection */}
         <AnimatePresence mode="wait">
           {(selectedGrade && selectedSubject) && (
             <motion.section
               key={`${selectedGrade}-${selectedSubject}`}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
               className="selection-group"
+              id="unit-selection-section"
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <Sparkles size={32} className="text-primary" />
-                <h2 style={{ fontSize: '1.8rem', margin: 0 }}>単元を選択</h2>
+                <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)' }}>単元を選択</h2>
               </div>
               <div className="grid">
                 {currentUnits.length > 0 ? (
@@ -620,16 +621,26 @@ function App() {
                       key={unit.id}
                       variants={itemVariants}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       className={`option-chip ${selectedUnit === unit.id ? 'active' : ''}`}
                       onClick={() => setSelectedUnit(unit.id)}
+                      style={{ border: selectedUnit === unit.id ? '2px solid var(--primary)' : '2px solid var(--border)' }}
                     >
                       {unit.label}
                     </motion.div>
                   ))
                 ) : (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border)' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
-                      選択された教科の単元リストを読み込んでいます。または準備中です... ☕️
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: '3rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px dashed var(--border)',
+                    color: 'var(--text-main)'
+                  }}>
+                    <p style={{ fontSize: '1.1rem' }}>
+                      この教科の単元データが見つかりませんでした。
                     </p>
                   </div>
                 )}
