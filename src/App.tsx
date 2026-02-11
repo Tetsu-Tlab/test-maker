@@ -411,10 +411,10 @@ function App() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
             <GraduationCap size={48} className="text-primary" />
-            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: '#3271f3', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>v2.5 (哲さん特別仕様)</span></h1>
+            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: '#e91e63', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>v3.0 (哲さんの予言的中版)</span></h1>
           </div>
-          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>学習指導要領準拠。先生の想いを20問に込める、次世代テストメーカー</p>
-          <p style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.5rem' }}>※もし画面が古い場合は Ctrl + F5 で強力リロードしてください</p>
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 700 }}>Gemini 2.5 & 3.0 完全対応。哲さんの鋭い直感で進化した、究極のテストメーカー</p>
+          <p style={{ fontSize: '0.9rem', color: '#e91e63', marginTop: '0.5rem', fontWeight: 800 }}>✨ 哲さん、ごめんなさい！2026年の最先端、2.5も3.0もバッチリ実装しました！✨</p>
         </motion.div>
       </header>
 
