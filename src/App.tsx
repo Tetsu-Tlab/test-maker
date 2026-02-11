@@ -405,9 +405,10 @@ function App() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
             <GraduationCap size={48} className="text-primary" />
-            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI</h1>
+            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: 'var(--primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>v1.5 最終修正版</span></h1>
           </div>
           <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>学習指導要領準拠。先生の想いを20問に込める、次世代テストメーカー</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.5rem' }}>※もし画面が古い場合は Ctrl + F5 で強力リロードしてください</p>
         </motion.div>
       </header>
 
