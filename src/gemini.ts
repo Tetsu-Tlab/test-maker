@@ -10,38 +10,40 @@ export async function generateQuiz(
 ) {
   if (!apiKey) throw new Error("APIキーが入力されていません。設定画面で入力してください。");
 
-  // APIのURLがおかしくならないよう、最も標準的な方法で初期化
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // 試行するモデル名のリスト（絶対にどれかは反応するように広げました）
+  // 2026年現在、最も普及しており、かつエラーになりにくい最新モデル順
   const modelNames = [
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-pro",
-    "gemini-pro",
-    "gemini-1.0-pro"
+    "gemini-1.5-flash",        // 標準
+    "gemini-1.5-flash-latest", // 最新版
+    "gemini-2.0-flash-exp",    // 次世代プレビュー版（制限が緩いことが多い）
+    "gemini-1.5-pro"           // プロ版
   ];
 
-  let lastError = null;
+  let errors: string[] = [];
 
   for (const modelName of modelNames) {
     try {
-      console.log(`[Diagnostic] Trying model: ${modelName}`);
+      console.log(`[Diagnostic] Trying: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
 
-      const prompt = `あなたは日本の教師です。以下の条件で20問の4択テストをJSON形式で作成してください。
-学年: ${grade}, 教科: ${subject}, 単元: ${unit}, 配慮: ${specialNeed}
-${useFurigana ? '【重要】すべての漢字に(ふりがな)をつけてください。例：漢字(かんじ)' : 'ふりがな不要。'}
+      // 余計な修飾を省いた最もシンプルなプロンプト
+      const prompt = `あなたは教師です。20問の4択テストを作成し、以下のJSON構造のみで返してください。
+学年: ${grade}
+教科: ${subject}
+単元: ${unit}
+配慮: ${specialNeed}
+ふりがな: ${useFurigana ? 'すべての漢字に(ふりがな)を付与' : '不要'}
 
-【形式】以下のJSONのみ返せ:
+JSON形式：
 {
-  "title": "${grade} ${subject} テスト",
+  "title": "テストタイトル",
   "questions": [
     {
       "text": "問題文",
-      "options": ["a", "b", "c", "d"],
+      "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
       "correctIndex": 0,
-      "explanation": "丁寧な解説"
+      "explanation": "解説"
     }
   ]
 }`;
@@ -50,20 +52,27 @@ ${useFurigana ? '【重要】すべての漢字に(ふりがな)をつけてく�
       const response = await result.response;
       const text = response.text();
 
+      // JSON部分を抽出
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        console.log(`[Success] Worked with: ${modelName}`);
+        console.log(`[Success!] Work with: ${modelName}`);
         return JSON.parse(jsonMatch[0]);
       }
     } catch (err: any) {
-      console.warn(`[Fail] ${modelName} failed:`, err.message);
-      lastError = err;
+      console.warn(`[Failed] ${modelName}:`, err.message);
+      errors.push(`${modelName}(${err.message.substring(0, 30)})`);
+
       if (err.message?.includes("API_KEY_INVALID")) {
-        throw new Error("APIキーが無効です。Google AI Studioで取得したキーか確認してください。");
+        throw new Error("APIキーが無効です。Google AI Studioで新しいキーを発行してください。");
       }
       continue;
     }
   }
 
-  throw new Error(`利用可能なGeminiモデルが見つかりません(404)。APIキーの権限(無料枠など)を確認してください。\n(Error: ${lastError?.message})`);
+  // すべてダメだった場合
+  throw new Error(
+    "全てのAIモデルへの接続に失敗しました(404)。\n\n" +
+    "【試行ログ】: " + errors.join(", ") + "\n\n" +
+    "【解決策】: Google AI Studio (https://aistudio.google.com/) で、APIキーを「完全に新しく」作り直して貼り付けてみてください。古いキーだと新しいモデルが見つからない場合があります。"
+  );
 }
