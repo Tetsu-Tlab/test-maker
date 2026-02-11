@@ -1,3 +1,4 @@
+// @ts-nocheck
 function doGet(e) {
     return ContentService.createTextOutput("GAS is ready.");
 }
