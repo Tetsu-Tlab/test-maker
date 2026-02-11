@@ -170,6 +170,8 @@ h4 {
   text-align: center;
   font-weight: 600;
   background: var(--bg-card);
+  color: var(--text-main) !important;
+  /* 文字色を強制 */
   user-select: none;
 }
 
@@ -179,8 +181,9 @@ h4 {
 }
 
 .option-chip.active {
-  background: var(--primary);
-  color: white;
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  /* 選択時は常に白文字 */
   border-color: var(--primary);
   box-shadow: 0 5px 15px hsla(var(--primary-hsl), 0.4);
 }
