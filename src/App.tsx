@@ -89,7 +89,7 @@ function App() {
     try {
       const gradeLabel = GRADES.find(g => g.id === selectedGrade)?.label || '';
       const subjLabel = SUBJECTS.find(s => s.id === selectedSubject)?.label || '';
-      const unitLabel = (UNITS as any)[selectedSubject]?.find((u: any) => u.id === selectedUnit)?.label || '';
+      const unitLabel = (UNITS as any)[selectedGrade]?.[selectedSubject]?.find((u: any) => u.id === selectedUnit)?.label || '';
       const snLabel = SPECIAL_NEEDS.find(s => s.id === selectedSpecialNeed)?.label || '';
 
       const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel, useFurigana);
@@ -135,7 +135,9 @@ function App() {
     }
   };
 
-  const currentUnits = selectedSubject ? (UNITS as any)[selectedSubject] || [] : [];
+  const currentUnits = (selectedGrade && selectedSubject)
+    ? (UNITS as any)[selectedGrade]?.[selectedSubject] || []
+    : [];
 
   // --- Success Screen ---
   if (generatedUrl) {
