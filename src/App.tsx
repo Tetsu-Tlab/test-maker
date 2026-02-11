@@ -178,9 +178,14 @@ function App() {
     startEditing(quizPreviewData.questions.length);
   };
 
-  const currentUnits = (selectedGrade && selectedSubject)
-    ? (UNITS as any)[selectedGrade]?.[selectedSubject] || []
-    : [];
+  const currentUnits = (() => {
+    if (!selectedGrade || !selectedSubject) return [];
+    const gradeUnits = (UNITS as any)[selectedGrade];
+    if (!gradeUnits) return [];
+    return gradeUnits[selectedSubject] || [];
+  })();
+
+  console.log("Current state:", { selectedGrade, selectedSubject, selectedUnit, unitsCount: currentUnits.length });
 
   // --- Success Screen ---
   if (generatedUrl) {
