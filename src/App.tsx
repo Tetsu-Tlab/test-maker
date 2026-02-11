@@ -11,7 +11,12 @@ import {
   Users,
   Eye,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Edit3,
+  Trash2,
+  PlusCircle,
+  Save,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GRADES, SUBJECTS, SPECIAL_NEEDS, UNITS } from './constants';
@@ -53,6 +58,10 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [quizPreviewData, setQuizPreviewData] = useState<any>(null);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+
+  // Editing state for preview
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editBuffer, setEditBuffer] = useState<any>(null);
 
   const loadingMessages = [
     "問題を考えています... 🤔",
@@ -135,6 +144,40 @@ function App() {
     }
   };
 
+  // --- Preview Edit Functions ---
+  const startEditing = (idx: number) => {
+    setEditingIndex(idx);
+    setEditBuffer(JSON.parse(JSON.stringify(quizPreviewData.questions[idx])));
+  };
+
+  const saveEdit = () => {
+    if (editingIndex === null || !editBuffer) return;
+    const newQuestions = [...quizPreviewData.questions];
+    newQuestions[editingIndex] = editBuffer;
+    setQuizPreviewData({ ...quizPreviewData, questions: newQuestions });
+    setEditingIndex(null);
+  };
+
+  const deleteQuestion = (idx: number) => {
+    if (!confirm('この問題を削除しますか？')) return;
+    const newQuestions = quizPreviewData.questions.filter((_: any, i: number) => i !== idx);
+    setQuizPreviewData({ ...quizPreviewData, questions: newQuestions });
+  };
+
+  const addQuestion = () => {
+    const newQ = {
+      text: "新しい問題文を入力してください",
+      options: ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+      correctIndex: 0,
+      explanation: "解説を入力してください"
+    };
+    setQuizPreviewData({
+      ...quizPreviewData,
+      questions: [...quizPreviewData.questions, newQ]
+    });
+    startEditing(quizPreviewData.questions.length);
+  };
+
   const currentUnits = (selectedGrade && selectedSubject)
     ? (UNITS as any)[selectedGrade]?.[selectedSubject] || []
     : [];
@@ -163,9 +206,10 @@ function App() {
             }}>
               <CheckCircle2 size={40} />
             </div>
-            <h2>テストが完成しました！</h2>
+            <h2>テストが完成しました！🚀</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Google Drive内の「T-Lab/テスト/2026年度」フォルダに保存されました。
+              Google Drive内の「T-Lab/テスト/2026年度」フォルダに保存されました。<br />
+              成績管理用のスプレッドシートも自動で紐付けられています。
             </p>
           </div>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
@@ -191,64 +235,155 @@ function App() {
         <header className="header">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h1><Eye size={32} /> 問題のプレビュー</h1>
-            <p>生成された内容を確認してください。よろしければ Google Form を作成します。</p>
+            <p>生成された20問の内容を確認・修正してください。先生のこだわりを反映できます！✨</p>
           </motion.div>
         </header>
 
         <motion.div
-          className="card glass-morphism"
+          className="preview-container"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          style={{ padding: '2rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-            <h2 style={{ margin: 0, color: 'var(--primary)' }}>{quizPreviewData.title}</h2>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button className="option-chip" onClick={() => setQuizPreviewData(null)}>
-                <ArrowLeft size={18} /> 修正する
-              </button>
-              <button className="btn-primary" onClick={handleFinalCreate}>
-                この内容で作成する <ChevronRight size={18} />
-              </button>
+          <div className="preview-toolbar card glass-morphism">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <p style={{ fontWeight: 800, margin: 0 }}>現在の問題数: <span className="text-gradient" style={{ fontSize: '1.5rem' }}>{quizPreviewData.questions.length}</span></p>
+                <button className="option-chip" onClick={addQuestion}><PlusCircle size={18} /> 問題を追加</button>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="option-chip" onClick={() => setQuizPreviewData(null)}>
+                  <RefreshCw size={18} /> 最初からやり直す
+                </button>
+                <button className="btn-primary" onClick={handleFinalCreate}>
+                  Google Form を作成する <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {quizPreviewData.questions.map((q: any, idx: number) => (
-              <div key={idx} style={{ padding: '1.5rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.2rem' }}>Q{idx + 1}.</span>
-                  <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{q.text}</p>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginLeft: '2rem' }}>
-                  {q.options.map((opt: string, oIdx: number) => (
-                    <div key={oIdx} style={{
-                      padding: '0.75rem',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border)',
-                      background: oIdx === q.correctIndex ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
-                      borderColor: oIdx === q.correctIndex ? 'var(--primary)' : 'var(--border)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      {oIdx === q.correctIndex && <CheckCircle2 size={16} color="var(--primary)" />}
-                      {opt}
+              <motion.div
+                key={idx}
+                layout
+                className={`card preview-item ${editingIndex === idx ? 'editing' : ''}`}
+                style={{
+                  padding: '1.5rem',
+                  background: editingIndex === idx ? 'var(--bg-card)' : 'var(--bg-card-alt)',
+                  position: 'relative',
+                  border: editingIndex === idx ? '2px solid var(--primary)' : '1px solid var(--border)'
+                }}
+              >
+                {editingIndex === idx ? (
+                  /* --- EDIT MODE --- */
+                  <div className="edit-form">
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800 }}>問題文</label>
+                      <textarea
+                        value={editBuffer.text}
+                        onChange={(e) => setEditBuffer({ ...editBuffer, text: e.target.value })}
+                        style={{ width: '100%', padding: '1rem', background: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'white' }}
+                        rows={3}
+                      />
                     </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>💡 解説:</strong>
-                  {q.explanation}
-                </div>
-              </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800 }}>選択肢</label>
+                      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                        {editBuffer.options.map((opt: string, oIdx: number) => (
+                          <div key={oIdx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                              type="radio"
+                              checked={editBuffer.correctIndex === oIdx}
+                              onChange={() => setEditBuffer({ ...editBuffer, correctIndex: oIdx })}
+                            />
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => {
+                                const newOpts = [...editBuffer.options];
+                                newOpts[oIdx] = e.target.value;
+                                setEditBuffer({ ...editBuffer, options: newOpts });
+                              }}
+                              style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'white' }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800 }}>解説</label>
+                      <textarea
+                        value={editBuffer.explanation}
+                        onChange={(e) => setEditBuffer({ ...editBuffer, explanation: e.target.value })}
+                        style={{ width: '100%', padding: '1rem', background: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'white', fontSize: '0.9rem' }}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                      <button className="option-chip" onClick={() => setEditingIndex(null)}>キャンセル</button>
+                      <button className="btn-primary" onClick={saveEdit}><Save size={18} /> 保存する</button>
+                    </div>
+                  </div>
+                ) : (
+                  /* --- VIEW MODE --- */
+                  <>
+                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                      <button className="icon-btn" onClick={() => startEditing(idx)} title="編集"><Edit3 size={18} /></button>
+                      <button className="icon-btn text-error" onClick={() => deleteQuestion(idx)} title="削除"><Trash2 size={18} /></button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                      <span style={{ fontWeight: 900, color: 'var(--primary)', fontSize: '1.5rem', minWidth: '3rem' }}>{idx + 1}.</span>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', lineHeight: 1.5 }}>{q.text}</h3>
+                    </div>
+
+                    <div className="grid" style={{ paddingLeft: '4rem', marginBottom: '1.5rem' }}>
+                      {q.options.map((opt: string, oIdx: number) => (
+                        <div key={oIdx} className={`option-display ${oIdx === q.correctIndex ? 'correct' : ''}`} style={{
+                          padding: '1rem',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border)',
+                          background: oIdx === q.correctIndex ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                          borderColor: oIdx === q.correctIndex ? 'var(--primary)' : 'var(--border)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          {oIdx === q.correctIndex && <CheckCircle2 size={18} color="var(--primary)" />}
+                          {opt}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="explanation-box" style={{
+                      marginLeft: '4rem',
+                      padding: '1.5rem',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: 'var(--radius-sm)',
+                      borderLeft: '4px solid var(--primary)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>
+                        <Sparkles size={16} />
+                        <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>即時フィードバック用解説</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{q.explanation}</p>
+                    </div>
+                  </>
+                )}
+              </motion.div>
             ))}
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <button className="btn-primary" style={{ padding: '1rem 4rem' }} onClick={handleFinalCreate}>
-              Google Form を作成する <ChevronRight size={20} />
+          <div style={{ textAlign: 'center', marginTop: '4rem', marginBottom: '4rem' }}>
+            <button className="btn-primary" style={{ padding: '1.5rem 6rem', fontSize: '1.2rem' }} onClick={handleFinalCreate}>
+              この内容で Google Form を作成する <ChevronRight size={24} />
             </button>
+            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+              作成されたフォームは Google ドライブに自動保存されます。
+            </p>
           </div>
         </motion.div>
       </div>
@@ -264,8 +399,11 @@ function App() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h1>Quiz Creator AI</h1>
-          <p>学力向上を支える、20問のパーソナライズ小テスト生成</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <GraduationCap size={48} className="text-primary" />
+            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI</h1>
+          </div>
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>学習指導要領準拠。先生の想いを20問に込める、次世代テストメーカー</p>
         </motion.div>
       </header>
 
@@ -283,32 +421,35 @@ function App() {
               exit={{ opacity: 0 }}
               style={{
                 position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                zIndex: 1000
+                zIndex: 2000
               }}
             >
               <div className="loading-spinner" style={{
-                width: '60px', height: '60px',
-                border: '6px solid var(--border)',
-                borderTop: '6px solid var(--primary)',
+                width: '80px', height: '80px',
+                border: '8px solid var(--border)',
+                borderTop: '8px solid var(--primary)',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite',
-                marginBottom: '2rem'
+                marginBottom: '3rem'
               }}></div>
               <motion.p
                 key={loadingMessage}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{ fontSize: '1.5rem', fontWeight: 600, color: 'white' }}
+                style={{ fontSize: '1.8rem', fontWeight: 800, color: 'white', textAlign: 'center', maxWidth: '600px' }}
               >
                 {loadingMessage}
               </motion.p>
+              <p style={{ marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                AIが最高の問題を練り上げています。30秒ほどお待ちください...
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* API Key Section */}
+        {/* Setting Section */}
         <section className="selection-group glass-morphism card" style={{ marginBottom: '4rem', padding: '1.5rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -322,17 +463,17 @@ function App() {
                   onChange={(e) => saveApiKey(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '0.5rem',
+                    padding: '0.6rem',
                     borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--border)',
                     background: 'var(--bg-main)',
-                    color: 'var(--text-main)'
+                    color: 'white'
                   }}
                 />
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <GraduationCap className="text-primary" size={24} color="var(--primary)" />
+              <Languages className="text-primary" size={24} color="var(--primary)" />
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>GAS WebApp URL (任意)</h3>
                 <input
@@ -342,11 +483,11 @@ function App() {
                   onChange={(e) => saveGasUrl(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '0.5rem',
+                    padding: '0.6rem',
                     borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--border)',
                     background: 'var(--bg-main)',
-                    color: 'var(--text-main)'
+                    color: 'white'
                   }}
                 />
               </div>
@@ -354,16 +495,24 @@ function App() {
           </div>
         </section>
 
-        {/* Step 1: Grade Selection */}
+        {/* Step 1: Grade */}
         <section className="selection-group">
-          <h2><GraduationCap size={24} /> 学年を選択</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <GraduationCap size={32} className="text-primary" />
+            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>学年を選択</h2>
+          </div>
           <div className="grid">
             {GRADES.map((grade) => (
               <motion.div
                 key={grade.id}
                 variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={`option-chip ${selectedGrade === grade.id ? 'active' : ''}`}
-                onClick={() => setSelectedGrade(grade.id)}
+                onClick={() => {
+                  setSelectedGrade(grade.id);
+                  setSelectedUnit('');
+                }}
               >
                 {grade.label}
               </motion.div>
@@ -371,24 +520,32 @@ function App() {
           </div>
         </section>
 
-        {/* Step 2: Special Needs Selection */}
+        {/* Step 2: Special Needs */}
         <section className="selection-group">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2><Users size={24} /> クラス・個別の配慮</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Users size={32} className="text-primary" />
+              <h2 style={{ fontSize: '1.8rem', margin: 0 }}>クラス・個別の配慮</h2>
+            </div>
             <label style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.8rem',
               cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              color: useFurigana ? 'var(--primary)' : 'var(--text-muted)'
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.2rem',
+              background: useFurigana ? 'rgba(var(--primary-rgb), 0.1)' : 'rgba(255,255,255,0.05)',
+              borderRadius: '100px',
+              border: `1px solid ${useFurigana ? 'var(--primary)' : 'var(--border)'}`,
+              color: useFurigana ? 'var(--primary)' : 'var(--text-muted)',
+              transition: 'all 0.3s ease'
             }}>
               <input
                 type="checkbox"
                 checked={useFurigana}
                 onChange={(e) => setUseFurigana(e.target.checked)}
-                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                style={{ width: '20px', height: '20px', cursor: 'pointer' }}
               />
               ふりがなをつける
             </label>
@@ -398,6 +555,7 @@ function App() {
               <motion.div
                 key={item.id}
                 variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
                 className={`option-chip ${selectedSpecialNeed === item.id ? 'active' : ''}`}
                 onClick={() => setSelectedSpecialNeed(item.id)}
               >
@@ -407,9 +565,12 @@ function App() {
           </div>
         </section>
 
-        {/* Step 3: Subject Selection */}
+        {/* Step 3: Subject */}
         <section className="selection-group">
-          <h2><BookOpen size={24} /> 教科を選択</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <BookOpen size={32} className="text-primary" />
+            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>教科を選択</h2>
+          </div>
           <div className="grid">
             {SUBJECTS.map((subject) => {
               const Icon = iconMap[subject.icon];
@@ -417,64 +578,87 @@ function App() {
                 <motion.div
                   key={subject.id}
                   variants={itemVariants}
+                  whileHover={{ scale: 1.05 }}
                   className={`option-chip ${selectedSubject === subject.id ? 'active' : ''}`}
                   onClick={() => {
                     setSelectedSubject(subject.id);
                     setSelectedUnit('');
                   }}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '1.5rem' }}
                 >
-                  <Icon size={20} />
-                  {subject.label}
+                  <Icon size={24} />
+                  <span style={{ fontSize: '1.2rem' }}>{subject.label}</span>
                 </motion.div>
               );
             })}
           </div>
         </section>
 
-        {/* Step 4: Unit Selection */}
-        <AnimatePresence>
-          {selectedSubject && (
+        {/* Step 4: Unit */}
+        <AnimatePresence mode="wait">
+          {(selectedGrade && selectedSubject) && (
             <motion.section
+              key={`${selectedGrade}-${selectedSubject}`}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="selection-group"
             >
-              <h2><Sparkles size={24} /> 単元を選択</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <Sparkles size={32} className="text-primary" />
+                <h2 style={{ fontSize: '1.8rem', margin: 0 }}>単元を選択</h2>
+              </div>
               <div className="grid">
-                {currentUnits.map((unit: any) => (
-                  <motion.div
-                    key={unit.id}
-                    variants={itemVariants}
-                    className={`option-chip ${selectedUnit === unit.id ? 'active' : ''}`}
-                    onClick={() => setSelectedUnit(unit.id)}
-                  >
-                    {unit.label}
-                  </motion.div>
-                ))}
-                {currentUnits.length === 0 && (
-                  <p style={{ color: 'var(--text-muted)' }}>この教科の単元データは準備中です。</p>
+                {currentUnits.length > 0 ? (
+                  currentUnits.map((unit: any) => (
+                    <motion.div
+                      key={unit.id}
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.05 }}
+                      className={`option-chip ${selectedUnit === unit.id ? 'active' : ''}`}
+                      onClick={() => setSelectedUnit(unit.id)}
+                    >
+                      {unit.label}
+                    </motion.div>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border)' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+                      選択された教科の単元リストを読み込んでいます。または準備中です... ☕️
+                    </p>
+                  </div>
                 )}
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        {/* Final Action */}
-        <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-          <button
+        {/* Final Action Button */}
+        <div style={{ textAlign: 'center', marginTop: '6rem', marginBottom: '4rem' }}>
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(var(--primary-rgb), 0.4)' }}
+            whileTap={{ scale: 0.95 }}
             className="btn-primary"
             disabled={!selectedGrade || !selectedSubject || !selectedUnit || isGenerating}
             onClick={handleGenerate}
+            style={{ padding: '1.5rem 6rem', fontSize: '1.5rem' }}
           >
-            問題を生成してプレビューする <ChevronRight size={20} />
-          </button>
+            問題を生成してプレビューする <ChevronRight size={28} />
+          </motion.button>
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+            <p style={{ fontSize: '0.9rem', color: selectedGrade ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 学年</p>
+            <p style={{ fontSize: '0.9rem', color: selectedSubject ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 教科</p>
+            <p style={{ fontSize: '0.9rem', color: selectedUnit ? 'var(--primary)' : 'var(--text-muted)' }}>✓ 単元</p>
+          </div>
         </div>
       </motion.main>
 
-      <footer style={{ marginTop: '5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-        <p>© 2026 T-Lab - 教育の未来を創る</p>
+      <footer style={{ marginTop: '5rem', padding: '4rem 0', textAlign: 'center', color: 'var(--text-muted)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <GraduationCap size={20} />
+          <p style={{ fontWeight: 800, letterSpacing: '0.1rem' }}>T-Lab AI EDUCATION</p>
+        </div>
+        <p style={{ fontSize: '0.8rem' }}>© 2026 T-Lab - 教育の未来を加速させる</p>
       </footer>
     </div>
   );

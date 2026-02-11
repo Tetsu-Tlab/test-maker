@@ -204,6 +204,101 @@ h4 {
   border: 1px solid var(--glass-border);
 }
 
+/* --- Preview Styles --- */
+.preview-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.preview-toolbar {
+  position: sticky;
+  top: 1rem;
+  z-index: 100;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.preview-item {
+  transition: all 0.3s ease;
+}
+
+.preview-item.editing {
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 20px hsla(var(--primary-hsl), 0.2);
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.icon-btn.text-error:hover {
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-error {
+  color: #ff4d4d;
+}
+
+.option-display.correct {
+  background: hsla(140, 70%, 50%, 0.1);
+  border-color: #2ecc71 !important;
+}
+
+.explanation-box {
+  border-left: 4px solid var(--primary);
+}
+
+.edit-form textarea,
+.edit-form input[type="text"] {
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.edit-form textarea:focus,
+.edit-form input[type="text"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px hsla(var(--primary-hsl), 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -220,4 +315,14 @@ h4 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
-}@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
