@@ -61,6 +61,7 @@ function App() {
   // Editing state for preview
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editBuffer, setEditBuffer] = useState<any>(null);
+  const [customModel, setCustomModel] = useState<string>(localStorage.getItem('custom_model') || '');
 
   const loadingMessages = [
     "問題を考えています... 🤔",
@@ -79,6 +80,11 @@ function App() {
   const saveGasUrl = (url: string) => {
     setGasUrl(url);
     localStorage.setItem('gas_url', url);
+  };
+
+  const saveCustomModel = (model: string) => {
+    setCustomModel(model);
+    localStorage.setItem('custom_model', model);
   };
 
   const handleGenerate = async () => {
@@ -100,7 +106,7 @@ function App() {
       const unitLabel = (UNITS as any)[selectedGrade]?.[selectedSubject]?.find((u: any) => u.id === selectedUnit)?.label || '';
       const snLabel = SPECIAL_NEEDS.find(s => s.id === selectedSpecialNeed)?.label || '';
 
-      const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel, useFurigana);
+      const quizData = await generateQuiz(apiKey, gradeLabel, subjLabel, unitLabel, snLabel, useFurigana, customModel);
       setQuizPreviewData(quizData);
     } catch (error: any) {
       console.error(error);
@@ -405,7 +411,7 @@ function App() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
             <GraduationCap size={48} className="text-primary" />
-            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: 'var(--primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>v1.5 最終修正版</span></h1>
+            <h1 style={{ fontSize: '3.5rem', margin: 0 }}>Quiz Creator AI <span style={{ fontSize: '1rem', verticalAlign: 'middle', background: '#3271f3', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>v2.5 (哲さん特別仕様)</span></h1>
           </div>
           <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>学習指導要領準拠。先生の想いを20問に込める、次世代テストメーカー</p>
           <p style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.5rem' }}>※もし画面が古い場合は Ctrl + F5 で強力リロードしてください</p>
@@ -455,12 +461,12 @@ function App() {
         </AnimatePresence>
 
         {/* Setting Section */}
-        <section className="selection-group glass-morphism card" style={{ marginBottom: '4rem', padding: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        <section className="selection-group glass-morphism card" style={{ marginBottom: '4rem', padding: '1.5rem', border: '3px solid #3271f3' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Sparkles className="text-primary" size={24} color="var(--primary)" />
+              <Sparkles className="text-primary" size={24} color="#3271f3" />
               <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Gemini API キー</h3>
+                <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem', color: '#3271f3', fontWeight: 800 }}>Gemini API キー</h3>
                 <input
                   type="password"
                   placeholder="キーを入力..."
@@ -478,9 +484,29 @@ function App() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Languages className="text-primary" size={24} color="var(--primary)" />
+              <PlusCircle className="text-primary" size={24} color="#3271f3" />
               <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>GAS WebApp URL (任意)</h3>
+                <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem', color: '#3271f3', fontWeight: 800 }}>モデル指定 (任意)</h3>
+                <input
+                  type="text"
+                  placeholder="例: gemini-2.0-flash-exp"
+                  value={customModel}
+                  onChange={(e) => saveCustomModel(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '2px solid #3271f3',
+                    background: 'var(--bg-main)',
+                    color: 'white'
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Languages className="text-primary" size={24} color="#3271f3" />
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '0.9rem', marginBottom: '0.25rem', color: '#3271f3', fontWeight: 800 }}>GAS URL (任意)</h3>
                 <input
                   type="text"
                   placeholder="https://script.google.com/..."

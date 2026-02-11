@@ -6,73 +6,62 @@ export async function generateQuiz(
   subject: string,
   unit: string,
   specialNeed: string,
-  useFurigana: boolean
+  useFurigana: boolean,
+  customModel?: string // ユーザー指定のモデル名を受け取れるように
 ) {
-  if (!apiKey) throw new Error("APIキーが入力されていません。設定画面で入力してください。");
+  if (!apiKey) throw new Error("APIキーが入力されていません。");
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // 2026年現在、最も普及しており、かつエラーになりにくい最新モデル順
-  const modelNames = [
-    "gemini-1.5-flash",        // 標準
-    "gemini-1.5-flash-latest", // 最新版
-    "gemini-2.0-flash-exp",    // 次世代プレビュー版（制限が緩いことが多い）
-    "gemini-1.5-pro"           // プロ版
+  // 試行するモデル名のリスト
+  // ユーザーが指定したものがあれば最優先、なければ最新順に自動試行
+  const modelNames = customModel ? [customModel] : [
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
+    "gemini-pro"
   ];
 
   let errors: string[] = [];
 
   for (const modelName of modelNames) {
     try {
-      console.log(`[Diagnostic] Trying: ${modelName}`);
+      console.log(`[Diagnostic] Attempting with: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
 
-      // 余計な修飾を省いた最もシンプルなプロンプト
-      const prompt = `あなたは教師です。20問の4択テストを作成し、以下のJSON構造のみで返してください。
-学年: ${grade}
-教科: ${subject}
-単元: ${unit}
-配慮: ${specialNeed}
-ふりがな: ${useFurigana ? 'すべての漢字に(ふりがな)を付与' : '不要'}
+      const prompt = `あなたは教師です。20問の4択テストをJSON構造のみで作成してください。
+学年: ${grade}, 教科: ${subject}, 単元: ${unit}, 配慮: ${specialNeed}
+ふりがな: ${useFurigana ? '必要' : '不要'}
 
-JSON形式：
-{
-  "title": "テストタイトル",
-  "questions": [
-    {
-      "text": "問題文",
-      "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
-      "correctIndex": 0,
-      "explanation": "解説"
-    }
-  ]
-}`;
+形式：
+{"title":"タイトル","questions":[{"text":"問","options":["a","b","c","d"],"correctIndex":0,"explanation":"解説"}]}`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const data = await result.response;
+      const text = data.text();
 
-      // JSON部分を抽出
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        console.log(`[Success!] Work with: ${modelName}`);
+        console.log(`[Bingo!] Work with: ${modelName}`);
         return JSON.parse(jsonMatch[0]);
       }
     } catch (err: any) {
-      console.warn(`[Failed] ${modelName}:`, err.message);
-      errors.push(`${modelName}(${err.message.substring(0, 30)})`);
+      const msg = err.message || "Unknown error";
+      console.warn(`[Fail] ${modelName} -> ${msg}`);
+      // エラー出力を少し詳しく (最初の100文字に拡大)
+      errors.push(`${modelName}: ${msg.substring(0, 100)}`);
 
-      if (err.message?.includes("API_KEY_INVALID")) {
-        throw new Error("APIキーが無効です。Google AI Studioで新しいキーを発行してください。");
+      if (msg.includes("API_KEY_INVALID")) {
+        throw new Error("APIキーが無効です。Google AI Studioで作成した正しいキーか確認してください。");
       }
       continue;
     }
   }
 
-  // すべてダメだった場合
   throw new Error(
-    "全てのAIモデルへの接続に失敗しました(404)。\n\n" +
-    "【試行ログ】: " + errors.join(", ") + "\n\n" +
-    "【解決策】: Google AI Studio (https://aistudio.google.com/) で、APIキーを「完全に新しく」作り直して貼り付けてみてください。古いキーだと新しいモデルが見つからない場合があります。"
+    "全てのAIモデルで見つかりませんでした(404)。\n" +
+    "【試行ログ】:\n" + errors.join("\n") + "\n\n" +
+    "【哲さんへのアドバイス】: APIキーを Google AI Studio (https://aistudio.google.com/app/apikey) で、『完全に新しく』作り直して貼り付けるのが一番の近道です！✨"
   );
 }
